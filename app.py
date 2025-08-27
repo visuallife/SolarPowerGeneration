@@ -3,9 +3,8 @@ import pandas as pd
 import numpy as np
 import joblib
 
-# Load saved model and scaler
+# Load only the trained model (no scaler needed for Random Forest)
 model = joblib.load("solar_model.pkl")
-scaler = joblib.load("scaler.pkl")
 
 st.set_page_config(page_title="Solar Power Prediction", layout="centered")
 
@@ -35,10 +34,26 @@ avg_pressure    = get_float_input("Average Pressure (period)", "0.0")
 input_data = np.array([[distance_noon, temperature, wind_direction, wind_speed,
                         sky_cover, visibility, humidity, avg_wind_speed, avg_pressure]])
 
-# Scale input
-input_scaled = scaler.transform(input_data)
-
 # Predict
 if st.button("🔮 Predict Power Generation"):
-    prediction = model.predict(input_scaled)[0]
+    prediction = model.predict(input_data)[0]
     st.success(f"⚡ Predicted Power Generation: {prediction:.2f} kW")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
