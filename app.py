@@ -1,56 +1,44 @@
-import pandas as pd
 import streamlit as st
+import pandas as pd
+import numpy as np
 import joblib
-import os
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 
-# Check if the model files exist before proceeding
-if not os.path.exists('solar_model.pkl') or not os.path.exists('scaler.pkl'):
-    st.error("Error: The files 'solar_model.pkl' and/or 'scaler.pkl' were not found.")
-    st.stop()
+# Load saved model and scaler
+model = joblib.load("solar_model.pkl")
+scaler = joblib.load("scaler.pkl")
 
-# Load the trained model and scaler
-try:
-    model = joblib.load('solar_model.pkl')
-    scaler = joblib.load('scaler.pkl')
-except Exception as e:
-    st.error(f"Error loading model or scaler: {e}")
-    st.stop()
+st.set_page_config(page_title="Solar Power Prediction", layout="centered")
 
-st.title("Solar Power Generation Predictor")
-st.write("Enter the environmental conditions to predict the power output.")
+st.title("☀️ Solar Power Generation Prediction")
+st.write("Enter environmental conditions to predict solar power output (kW).")
 
-# Define the features for the Streamlit UI
-FEATURES = {
-    'distance-to-solar-noon': 'Distance to Solar Noon',
-    'temperature': 'Temperature (°F)',
-    'wind-direction': 'Wind Direction (°)',
-    'wind-speed': 'Wind Speed (mph)',
-    'sky-cover': 'Sky Cover (oktas)',
-    'visibility': 'Visibility (miles)',
-    'humidity': 'Humidity (%)',
-    'average-wind-speed-(period)': 'Avg. Wind Speed (mph)',
-    'average-pressure-(period)': 'Avg. Pressure (inHg)'
-}
+def get_float_input(label, default="0.0"):
+    val = st.text_input(label, default)
+    try:
+        return float(val)
+    except ValueError:
+        st.warning(f"⚠️ Please enter a valid number for {label}")
+        return 0.0   # fallback allows 0
 
-# Create input widgets
-input_data = {}
-for key, label in FEATURES.items():
-    input_data[key] = st.number_input(label, step=0.1)
+# 🔹 Input fields (all allow unlimited decimals & 0)
+distance_noon   = get_float_input("Distance to Solar Noon", "0.0")
+temperature     = get_float_input("Temperature (°C)", "0.0")
+wind_direction  = get_float_input("Wind Direction (°)", "0.0")
+wind_speed      = get_float_input("Wind Speed (m/s)", "0.0")
+sky_cover       = get_float_input("Sky Cover (%)", "0.0")
+visibility      = get_float_input("Visibility (km)", "0.0")
+humidity        = get_float_input("Humidity (%)", "0.0")
+avg_wind_speed  = get_float_input("Average Wind Speed (period)", "0.0")
+avg_pressure    = get_float_input("Average Pressure (period)", "0.0")
 
-# Prediction button
-if st.button("Predict Power Generation"):
-    # Convert input data to a DataFrame
-    df_input = pd.DataFrame([input_data])
+# Collect inputs
+input_data = np.array([[distance_noon, temperature, wind_direction, wind_speed,
+                        sky_cover, visibility, humidity, avg_wind_speed, avg_pressure]])
 
-    # Scale the input data using the pre-trained scaler
-    scaled_input = scaler.transform(df_input)
+# Scale input
+input_scaled = scaler.transform(input_data)
 
-    # Make a prediction
-    prediction = model.predict(scaled_input)
-    predicted_power = round(prediction[0], 2)
-
-    st.subheader("Predicted Power Generated")
-    st.success(f"{predicted_power} Watts")
+# Predict
+if st.button("🔮 Predict Power Generation"):
+    prediction = model.predict(input_scaled)[0]
+    st.success(f"⚡ Predicted Power Generation: {prediction:.2f} kW")
